@@ -1,0 +1,26 @@
+﻿@model List<Ecommerce_App_prac1.Models.Cart>
+
+<h1>Shopping Cart</h1>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>Product Name</th>
+            <th>Quantity</th>
+            @* <th>Actions</th> *@
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model)
+        {
+            <tr>
+                <td>@item.ProductName</td>
+                <td>@item.Quantity</td>
+                @* <td>
+                    <!-- Add actions like Remove from Cart or Update Quantity if needed -->
+                </td> *@
+            </tr>
+        }
+    </tbody>
+</table>
+

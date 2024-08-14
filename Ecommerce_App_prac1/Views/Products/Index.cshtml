@@ -1,0 +1,49 @@
+﻿@model IEnumerable<Ecommerce_App_prac1.Models.Product>
+
+@{
+    ViewData["Title"] = "Index";
+    
+}
+
+<h1>Index</h1>
+
+<p>
+    <a asp-action="Create">Create New</a>
+    <a asp-action="ConverttoINR">Convert to INR</a>
+    <a asp-action="ConverttoUSD">Convert to USD</a>
+</p>
+<table class="table">
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Price</th>
+            <th>Description</th>
+            <th>Stock</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model.OrderBy(item => item.Price))
+        {
+            <tr>
+                <td>@item.Name</td>
+                <td>@item.Price</td>
+                <td>@item.Description</td>
+                <td>@item.Stock</td>
+                <td>
+                    <form asp-action="AddToCart" method="post">
+                        <input type="hidden" name="productId" value="@item.ProductId" />
+                        <input type="number" name="quantity" min="1" value="1" />
+                        <button type="submit">Add to Cart</button>
+                    </form>
+                    <a asp-action="Edit" asp-route-id="@item.ProductId">Edit</a> |
+                    <a asp-action="Details" asp-route-id="@item.ProductId">Details</a> |
+                    <a asp-action="Delete" asp-route-id="@item.ProductId">Delete</a>
+                </td>
+            </tr>
+        }
+        <p>
+            <a asp-action="ViewCart">View Cart</a>
+        </p>
+    </tbody>
+</table>
