@@ -10,6 +10,9 @@ using Humanizer;
 using Ecommerce_App_prac1.Services;
 using Microsoft.CodeAnalysis.CSharp;
 using Newtonsoft.Json.Linq;
+using Microsoft.CodeAnalysis;
+using System.Numerics;
+using Microsoft.AspNetCore.Http;
 
 namespace Ecommerce_App_prac1.Controllers
 {
@@ -27,6 +30,10 @@ namespace Ecommerce_App_prac1.Controllers
         // GET: Products
         public async Task<IActionResult> Index()
         {
+            if (string.IsNullOrEmpty(HttpContext.Session.GetString("Currency")))
+            {
+                HttpContext.Session.SetString("Currency", "USD");
+            }
             return View(await _context.Products.ToListAsync());
         }
 
@@ -63,14 +70,11 @@ namespace Ecommerce_App_prac1.Controllers
         {
             if (ModelState.IsValid)
             {
-                //if (string.IsNullOrEmpty(product.Currency))
-                //{
-                //    product.Currency = "USD"; 
-                //}
                 _context.Add(product);
                 await _context.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));
             }
+            HttpContext.Session.SetString("Currency", "USD");
             return View(product);
         }
 
@@ -176,8 +180,7 @@ namespace Ecommerce_App_prac1.Controllers
                     product.Price = product.Price * usdRate; // Update price in memory
 
                 }
-                HttpContext.Session.SetString("Currency", "USD");
-                //Uncomment the following two to save in the database
+                HttpContext.Session.SetString("Currency", "USD");                
                 _context.UpdateRange(products); // Mark products as updated
                 await _context.SaveChangesAsync(); // Save changes to the database
 
@@ -189,7 +192,7 @@ namespace Ecommerce_App_prac1.Controllers
         public async Task<IActionResult> ConvertToINR()
         {
             if (HttpContext.Session.GetString("Currency") == "INR") return RedirectToAction(nameof(Index));
-            else 
+            else
             {
                 var exchangeRateData = await _exchangeRateService.GetLatestRatesAsync("USD");
                 decimal inrRate = exchangeRateData["conversion_rates"]["INR"].Value<decimal>();
@@ -202,41 +205,46 @@ namespace Ecommerce_App_prac1.Controllers
                 }
                 HttpContext.Session.SetString("Currency", "INR");
 
-                //Uncomment the following two to save in the database
                 _context.UpdateRange(products); // Mark products as updated
                 await _context.SaveChangesAsync(); // Save changes to the database
 
                 return RedirectToAction(nameof(Index)); // Redirect to the Index view
-            } 
+            }
         }
 
-        public IActionResult AddToCart(int productId, int quantity)
+        public IActionResult AddToCart(Dictionary<int, int> quantities)
         {
-            var product = _context.Products.Find(productId);
-            if (product != null)
+            var cart = new List<Cart>();
+
+            foreach (var entry in quantities)
             {
-                var cart = HttpContext.Session.GetObject<List<Cart>>("Cart") ?? new List<Cart>();
-                var cartItem = cart.FirstOrDefault(c => c.ProductId == productId);
-
-                if (cartItem == null)
+                var product = _context.Products.Find(entry.Key);
+                cart.Add(new Cart
                 {
-                    cart.Add(new Cart { ProductId = productId, ProductName = product.Name, Quantity = quantity });
-                }
-                else
-                {
-                    cartItem.Quantity += quantity;
-                }
-
-                HttpContext.Session.SetObject("Cart", cart);
+                    ProductId = product.ProductId,
+                    ProductName = product.Name,
+                    Quantity = entry.Value,
+                    Price = entry.Value * product.Price,
+                });
             }
 
-            return RedirectToAction(nameof(Index));
+            var totalCart = cart.Sum(item => item.Price);
+            HttpContext.Session.SetString("TotalCart", totalCart.ToString());
+
+            HttpContext.Session.SetObject("Cart", cart);
+            return RedirectToAction("ViewCart");
         }
         public IActionResult ViewCart()
         {
             var cart = HttpContext.Session.GetObject<List<Cart>>("Cart") ?? new List<Cart>();
             return View(cart);
         }
+
+        public IActionResult ProceedtoPay()
+        {
+            return View("PaymentSuccess");
+        }
+
 
 
     }
