@@ -47,4 +47,10 @@
     </tbody>
 </table>
 <button type="submit" class="btn btn-primary">Submit and go to Cart</button>
+    @if (TempData["Warning"] != null)
+    {
+        <script type="text/javascript">
+            alert('@TempData["Warning"]');
+        </script>
+    }
 </form>

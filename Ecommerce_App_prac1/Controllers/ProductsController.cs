@@ -219,20 +219,31 @@ namespace Ecommerce_App_prac1.Controllers
             foreach (var entry in quantities)
             {
                 var product = _context.Products.Find(entry.Key);
-                cart.Add(new Cart
+                if (entry.Value >= 1)
                 {
-                    ProductId = product.ProductId,
-                    ProductName = product.Name,
-                    Quantity = entry.Value,
-                    Price = entry.Value * product.Price,
-                });
+                    cart.Add(new Cart
+                    {
+                        ProductId = product.ProductId,
+                        ProductName = product.Name,
+                        Quantity = entry.Value,
+                        Price = entry.Value * product.Price,
+                    });
+                }
             }
 
             var totalCart = cart.Sum(item => item.Price);
-            HttpContext.Session.SetString("TotalCart", totalCart.ToString());
+            if (totalCart <= 0)
+            {
+                TempData["Warning"] = "Please select at least one item to add to the cart.";
+                return RedirectToAction(nameof(Index));
+            }
+            else
+            {
+                HttpContext.Session.SetString("TotalCart", totalCart.ToString());
 
-            HttpContext.Session.SetObject("Cart", cart);
-            return RedirectToAction("ViewCart");
+                HttpContext.Session.SetObject("Cart", cart);
+                return RedirectToAction("ViewCart");
+            }
         }
         public IActionResult ViewCart()
         {
@@ -240,8 +251,20 @@ namespace Ecommerce_App_prac1.Controllers
             return View(cart);
         }
 
-        public IActionResult ProceedtoPay()
+        public async Task<IActionResult> ProceedtoPay()
         {
+            var products = await _context.Products.ToListAsync();
+            var cart = HttpContext.Session.GetObject<List<Cart>>("Cart") ?? new List<Cart>();
+            foreach (var cartItem in cart)
+            {
+                var product = products.FirstOrDefault(p => p.ProductId == cartItem.ProductId);
+                if (product != null)
+                {
+                    product.Stock -= cartItem.Quantity;
+                }
+
+            }
+            await _context.SaveChangesAsync();
             return View("PaymentSuccess");
         }
 

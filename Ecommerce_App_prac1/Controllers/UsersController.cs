@@ -25,7 +25,7 @@ namespace Ecommerce_App_prac1.Controllers
             {
                 _context.Add(user);
                 await _context.SaveChangesAsync();
-                return RedirectToAction(nameof(Register));
+                return RedirectToAction(nameof(Login));
             }
             return View(user);
         }
